@@ -15,18 +15,11 @@ export default function VectorDemo() {
   >([]);
   const [loading, setLoading] = useState(false);
 
-  // Mock embedding function - in real app, you'd use OpenAI's embedding API
-  const generateMockEmbedding = (_text: string): number[] => {
-    // Generate a mock 1536-dimensional vector
-    return Array.from({ length: 1536 }, () => Math.random() - 0.5);
-  };
-
   const handleStoreEmbedding = async () => {
     if (!text.trim()) return;
 
     setLoading(true);
     try {
-      const embedding = generateMockEmbedding(text);
       const response = await fetch("/api/vector", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -34,7 +27,7 @@ export default function VectorDemo() {
           action: "store",
           data: {
             text: text.trim(),
-            embedding,
+            embedding: [], // Use empty array or remove if not needed
             metadata: { source: "demo", timestamp: new Date().toISOString() },
           },
         }),
@@ -59,14 +52,13 @@ export default function VectorDemo() {
 
     setLoading(true);
     try {
-      const queryEmbedding = generateMockEmbedding(searchQuery);
       const response = await fetch("/api/vector", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "search",
           data: {
-            queryEmbedding,
+            queryEmbedding: [], // Use empty array or remove if not needed
             limit: 5,
             threshold: 0.7,
           },

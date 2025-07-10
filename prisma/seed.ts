@@ -271,7 +271,7 @@ async function main() {
     const createdProduct = await prisma.product.create({
       data: {
         ...product,
-        // Omit embedding field - will be set separately
+        // Do not include embedding property
       },
     });
     createdProducts.push(createdProduct);
@@ -279,15 +279,14 @@ async function main() {
 
   console.log(`✅ Created ${createdProducts.length} products`);
 
-  // Step 2: Add embeddings using raw SQL
+  // Step 2: Add embeddings using raw SQL for pgvector
   console.log("🔗 Adding embeddings...");
   for (const product of createdProducts) {
     const embedding = generateMockEmbedding();
     const embeddingArray = `[${embedding.join(",")}]`;
-
-    await prisma.$executeRaw`
-      UPDATE products 
-      SET embedding = ${embeddingArray}::vector 
+    await prisma.$executeRaw`\
+      UPDATE products \
+      SET embedding = ${embeddingArray}::vector \
       WHERE id = ${product.id}
     `;
   }

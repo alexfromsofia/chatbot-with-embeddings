@@ -9,23 +9,6 @@ export interface VectorSearchResult {
 
 export class VectorStore {
   /**
-   * Store text with its embedding
-   */
-  static async storeEmbedding(
-    text: string,
-    embedding: number[],
-    metadata?: Record<string, unknown>
-  ) {
-    return await prisma.embedding.create({
-      data: {
-        text,
-        embedding: embedding as unknown as number[], // Prisma will handle the vector type
-        metadata,
-      },
-    });
-  }
-
-  /**
    * Search for similar embeddings using cosine similarity
    */
   static async similaritySearch(
@@ -65,35 +48,6 @@ export class VectorStore {
         metadata: result.metadata,
       })
     );
-  }
-
-  /**
-   * Store a message with its embedding
-   */
-  static async storeMessage(
-    sessionId: string,
-    role: "user" | "assistant" | "system",
-    content: string,
-    embedding?: number[]
-  ) {
-    return await prisma.message.create({
-      data: {
-        role,
-        content,
-        sessionId,
-        embedding: embedding as unknown as number[],
-      },
-    });
-  }
-
-  /**
-   * Get chat history for a session
-   */
-  static async getChatHistory(sessionId: string) {
-    return await prisma.message.findMany({
-      where: { sessionId },
-      orderBy: { createdAt: "asc" },
-    });
   }
 
   /**
