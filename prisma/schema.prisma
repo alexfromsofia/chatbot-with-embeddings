@@ -14,6 +14,128 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Enums for type safety
+enum MetalType {
+  GOLD
+  SILVER
+  PLATINUM
+  PALLADIUM
+  RHODIUM
+  COPPER
+  BRONZE
+  NICKEL
+}
+
+enum ProductCategory {
+  COINS
+  BARS
+  ROUNDS
+  JEWELRY
+  INVESTMENT
+  COLLECTIBLE
+  MEDALS
+  INGOTS
+}
+
+enum ProductCondition {
+  NEW
+  MINT
+  EXCELLENT
+  VERY_GOOD
+  GOOD
+  FAIR
+  POOR
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+  ON_HOLD
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  BANK_TRANSFER
+  CRYPTO
+  WIRE_TRANSFER
+  PAYPAL
+  CHECK
+  MONEY_ORDER
+}
+
+enum Currency {
+  USD
+  EUR
+  GBP
+  CAD
+  AUD
+  CHF
+  JPY
+  CNY
+}
+
+enum PurityLevel {
+  PURE_9999 // 99.99%
+  PURE_9995 // 99.95%
+  PURE_999 // 99.9%
+  PURE_995 // 99.5%
+  PURE_990 // 99.0%
+  PURE_958 // 95.8% (22k gold)
+  PURE_916 // 91.6% (22k gold)
+  PURE_750 // 75.0% (18k gold)
+  PURE_585 // 58.5% (14k gold)
+  PURE_375 // 37.5% (9k gold)
+  PURE_900 // 90.0% (US coins)
+  PURE_800 // 80.0% (European coins)
+}
+
+enum WeightUnit {
+  GRAMS
+  OUNCES
+  TROY_OUNCES
+  KILOGRAMS
+  POUNDS
+}
+
+enum JewelryType {
+  NECKLACE
+  RING
+  BRACELET
+  EARRINGS
+  PENDANT
+  CHAIN
+  WATCH
+  CUFFLINKS
+}
+
+enum MintType {
+  US_MINT
+  ROYAL_CANADIAN_MINT
+  ROYAL_MINT
+  PERTH_MINT
+  PAMP_SUISSE
+  VALCAMBI
+  GENERIC
+  PRIVATE_MINT
+}
+
+enum CoinGrade {
+  PROOF
+  UNCIRCULATED
+  EXTREMELY_FINE
+  VERY_FINE
+  FINE
+  VERY_GOOD
+  GOOD
+  ABOUT_GOOD
+  FAIR
+  POOR
+}
+
 // Chat sessions
 model ChatSession {
   id        String    @id @default(cuid())
@@ -38,7 +160,88 @@ model Message {
   @@map("messages")
 }
 
-// Vector embeddings for semantic search
+// Products with vector embeddings for semantic search
+model Product {
+  id          String                       @id @default(cuid())
+  name        String
+  description String
+  metalType   MetalType
+  category    ProductCategory
+  condition   ProductCondition
+  weight      Float // in grams
+  weightUnit  WeightUnit                   @default(GRAMS)
+  purity      Float // percentage (e.g., 99.9 for 99.9%)
+  purityLevel PurityLevel?
+  price       Float
+  currency    Currency                     @default(USD)
+  sku         String                       @unique
+  inStock     Boolean                      @default(true)
+  stockCount  Int                          @default(0)
+  embedding   Unsupported("vector(1536)")? // Product description embedding
+  metadata    Json? // Additional product metadata
+  createdAt   DateTime                     @default(now())
+  updatedAt   DateTime                     @updatedAt
+
+  // Optional fields for specific product types
+  mint        MintType?
+  grade       CoinGrade?
+  jewelryType JewelryType?
+
+  // Relations
+  orderItems OrderItem[]
+
+  @@map("products")
+}
+
+// Customers
+model Customer {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  phone     String?
+  address   Json? // Structured address data
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  orders Order[]
+
+  @@map("customers")
+}
+
+// Orders
+model Order {
+  id              String        @id @default(cuid())
+  customerId      String
+  customer        Customer      @relation(fields: [customerId], references: [id])
+  status          OrderStatus   @default(PENDING)
+  paymentMethod   PaymentMethod
+  totalAmount     Float
+  currency        Currency      @default(USD)
+  shippingAddress Json
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  items OrderItem[]
+
+  @@map("orders")
+}
+
+// Order items (many-to-many relationship)
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int
+  unitPrice Float
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+// Vector embeddings for semantic search (general purpose)
 model Embedding {
   id        String                      @id @default(cuid())
   text      String
